@@ -5,8 +5,30 @@
 #include <math.h>
 #endif
 
+/************************************************
+ *
+ * Compile time settings:
+ *
+ * Chose the chip type:
+ *
+ * #define TSL2561_PACKAGE_T_FN_CL
+ * *or*
+ * #define TSL2561_PACKAGE_CS
+ *
+ *
+ *
+ * Calculate LUX using the fast integer aproximation
+ * instead of the official formulas. Both calculations
+ * are part of the data sheet:
+ * #define calculateLux_exampleCodeDatasheet
+ *
+ ************************************************/
+
+//#define calculateLux_exampleCodeDatasheet
+
 #define TSL2561_PACKAGE_T_FN_CL
 //#define TSL2561_PACKAGE_CS
+
 
 // used to control data transfer from/to TSL2561
 #define TSL2561_COMMAND_BIT       (0x80)	// Must be 1
@@ -138,12 +160,18 @@ static const uint16_t TSL2561_INT_B[8] = {
 // In order to avoid overflows, CHSCALE is not used
 // in integer calculations, but computed out while
 // computing the scales value.
-// 
+
 #define TSL2561_INT_RATIOSCALE    (9)      // Scale ratio by 2^9
 #define TSL2561_INT_CHSCALE       (10)     // Scale channel values by 2^10
 #define TSL2561_INT_CHSCALE_TINT0 (0x7517) // 322/11 * 2^TSL2561_INT_CHSCALE
 #define TSL2561_INT_CHSCALE_TINT1 (0x0FE7) // 322/81 * 2^TSL2561_INT_CHSCALE
+
+// TSL2561_INT_LUXSCALE is for integer calculations only:
+#ifdef calculateLux_exampleCodeDatasheet
 #define TSL2561_INT_LUXSCALE      (14)     // Scale by 2^14
+#else
+#define TSL2561_INT_LUXSCALE      (0)
+#endif
 
 // These values are calculate for for gain==16; multiply by 16 if gain == 1
 static const float scales[3] = {
@@ -224,7 +252,6 @@ void TSL2561::writeI2C8(uint8_t reg, byte value)
 
 void TSL2561::enableDevice(void)
 {
-	/* Enable the device by setting the control bit to 0x03 */
 	if (is_powered)
 		return;
 	writeI2C8(TSL2561_COMMAND_BIT | TSL2561_REGISTER_CONTROL,
@@ -233,7 +260,6 @@ void TSL2561::enableDevice(void)
 }
 void TSL2561::disableDevice(void)
 {
-	/* Turn the device off to save power */
 	writeI2C8(TSL2561_COMMAND_BIT | TSL2561_REGISTER_CONTROL,
 		   TSL2561_CONTROL_POWEROFF);
 	is_powered = false;
@@ -382,7 +408,6 @@ bool TSL2561::updateDataAutorange()
 	return true;
 }
 
-#define calculateLux_exampleCodeDatasheet
 float TSL2561::calculateLux()
 {
 	unsigned long chScale;
@@ -422,7 +447,6 @@ float TSL2561::calculateLux()
 #else //!calculateLux_smallFast
 	// calculate Luy using official formula
 	float luxUnscaled;
-	// using official formula
 	float ratio2 = ir * 1.0 / broadband;
 /*  Serial.print(broadband);Serial.print(" ");
   Serial.print(ir);Serial.print(" ");
@@ -440,8 +464,6 @@ float TSL2561::calculateLux()
 		luxUnscaled = 0.00146 * broadband - 0.00112 * ir;
 	} else
 		luxUnscaled = 0;
-	luxUnscaled *= (1<<TSL2561_INT_LUXSCALE);
-	// is in global scale to compensate for integer calculations
 	#endif
 	luxIsCurrent = true;
 	return lux = luxUnscaled * _scale;

@@ -18,7 +18,7 @@
 
 #endif //!RasPi
 
-// I2C address options
+// I2C address
 #define TSL2561_ADDR_LOW          (0x29)
 #define TSL2561_ADDR_FLOAT        (0x39)	// Default address (pin left floating)
 #define TSL2561_ADDR_HIGH         (0x49)
@@ -121,7 +121,7 @@ class TSL2561 {
 	// Enable device, wait, read, possibly disable it
 	bool getDataDelay();
 	bool getDataAutorange() { // get best reading allowed
-		return updateDataDelay()
+		return getDataDelay()
 		    && updateDataAutorange();
 	};
 
@@ -169,6 +169,6 @@ class TSL2561 {
 
 	void writeI2C8(uint8_t reg, byte value);
 	//uint8_t readI2C8(uint8_t reg);
-	//uint16_t read16(uint8_t reg);
+	//uint16_t readI2C16(uint8_t reg);
 };
 #endif
